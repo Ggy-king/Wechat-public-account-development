@@ -1,0 +1,69 @@
+微信 -> 微信网页开发 -> js-sdk鉴权说明文档
+
+index.html   ->   引入JS-SDK (jsweixin.js)    ->   wx.config()  ->   wx.ready   
+(使用JS-SDK)                                        配置文件           准备
+
+
+  ->   {
+    wx.chooseImage
+    wx.getLocation
+    wx.share
+  }
+  使用微信的功能
+
+
+wx.configg    {
+    appld
+    timetamp 时间戳
+    nonceStr  随机字符串     
+    signature  签名
+    jsApiList
+}
+上面通过新浪node服务拿到    <-  signature  <-  { jsapi_ticket timetamp nonceStr url(携带的config.js) }
+
+jsapi_ticket  <-    access_token    <-  微信服务器
+
+
+JSSDK使用步骤
+
+步骤一：绑定域名
+先登录微信公众平台进入“公众号设置”的“功能设置”里填写“JS接口安全域名”。
+
+备注：登录后可在“开发者中心”查看对应的接口权限。
+
+
+步骤二：引入 JS 文件
+在需要调用 JS 接口的页面引入如下 JS 文件，（支持https）：http://res.wx.qq.com/open/js/jweixin-1.6.0.js
+
+如需进一步提升服务稳定性，当上述资源不可访问时，可改访问：http://res2.wx.qq.com/open/js/jweixin-1.6.0.js （支持https）。
+
+备注：支持使用 AMD/CMD 标准模块加载方法加载
+
+
+步骤三：通过 config 接口注入权限验证配置
+所有需要使用 JS-SDK 的页面必须先注入配置信息，否则将无法调用（同一个 url 仅需调用一次，对于变化 url 的SPA的web app可在每次 url 变化时进行调用,目前 Android 微信客户端不支持 pushState 的H5新特性，所以使用 pushState 来实现web app的页面会导致签名失败，此问题会在Android6.2中修复）。
+
+wx.config({
+  debug: true, // 开启调试模式,调用的所有 api 的返回值会在客户端 alert 出来，若要查看传入的参数，可以在 pc 端打开，参数信息会通过 log 打出，仅在 pc 端时才会打印。
+  appId: '', // 必填，公众号的唯一标识
+  timestamp: , // 必填，生成签名的时间戳
+  nonceStr: '', // 必填，生成签名的随机串
+  signature: '',// 必填，签名
+  jsApiList: [] // 必填，需要使用的 JS 接口列表
+});
+签名算法见文末的附录1，所有 JS 接口列表见文末的附录2
+
+注意：如果使用的是小程序云开发静态网站托管的域名的网页，可以免鉴权直接跳任意合法合规小程序，调用 wx.config 时 appId 需填入非个人主体的已认证小程序，不需计算签名，timestamp、nonceStr、signature 填入非空任意值即可。
+
+
+步骤四：通过 ready 接口处理成功验证
+wx.ready(function(){
+  // config信息验证后会执行 ready 方法，所有接口调用都必须在 config 接口获得结果之后，config是一个客户端的异步操作，所以如果需要在页面加载时就调用相关接口，则须把相关接口放在 ready 函数中调用来确保正确执行。对于用户触发时才调用的接口，则可以直接调用，不需要放在 ready 函数中。
+});
+
+步骤五：通过 error 接口处理失败验证
+wx.error(function(res){
+  // config信息验证失败会执行 error 函数，如签名过期导致验证失败，具体错误信息可以打开 config 的debug模式查看，也可以在返回的 res 参数中查看，对于 SPA 可以在这里更新签名。
+});
+                                               
+  
